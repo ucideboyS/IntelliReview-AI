@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IntelliReview</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0d12;
+    --surface: #0f1318;
+    --surface2: #151b22;
+    --border: #1e2730;
+    --border2: #252f3a;
+    --accent: #7c3aed;
+    --accent2: #a855f7;
+    --green: #10b981;
+    --green2: #34d399;
+    --red: #ef4444;
+    --yellow: #f59e0b;
+    --text: #e2e8f0;
+    --text2: #94a3b8;
+    --text3: #4b5563;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Syne', sans-serif;
+    --grid-color: rgba(124,58,237,0.03);
+    --glow-color: rgba(124,58,237,0.08);
+    --shadow: rgba(0,0,0,0.3);
+  }
+
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f5f7fa;
+      --surface: #ffffff;
+      --surface2: #eef1f6;
+      --border: #dde2ec;
+      --border2: #c8d0e0;
+      --green: #059669;
+      --green2: #10b981;
+      --red: #dc2626;
+      --yellow: #d97706;
+      --text: #1e293b;
+      --text2: #475569;
+      --text3: #94a3b8;
+      --grid-color: rgba(124,58,237,0.04);
+      --glow-color: rgba(124,58,237,0.06);
+      --shadow: rgba(0,0,0,0.08);
+    }
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    min-height: 100vh;
+    overflow-x: hidden;
+    transition: background 0.3s, color 0.3s;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(var(--grid-color) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  body::after {
+    content: '';
+    position: fixed; top: -200px; right: -200px;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, var(--glow-color) 0%, transparent 70%);
+    pointer-events: none; z-index: 0;
+  }
+
+  .wrapper {
+    position: relative; z-index: 1;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px 60px;
+  }
+
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 28px;
+  }
+
+  .logo {
+    display: flex; align-items: center; gap: 10px;
+    font-family: var(--sans); font-size: 22px; font-weight: 800; letter-spacing: -0.5px;
+  }
+
+  .logo-icon {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    box-shadow: 0 0 20px rgba(124,58,237,0.4);
+  }
+
+  .logo span { color: var(--accent2); }
+
+  .status-badge {
+    display: flex; align-items: center; gap: 8px;
+    background: rgba(16,185,129,0.1);
+    border: 1px solid rgba(16,185,129,0.2);
+    border-radius: 20px; padding: 6px 14px;
+    font-size: 11px; color: var(--green2); letter-spacing: 1px; font-weight: 600;
+  }
+
+  .status-dot {
+    width: 7px; height: 7px; background: var(--green2); border-radius: 50%;
+    animation: pulse 2s infinite; box-shadow: 0 0 8px var(--green2);
+  }
+
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:0.5;transform:scale(0.8);} }
+
+  .main-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 16px; margin-bottom: 16px;
+  }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border); border-radius: 12px;
+    overflow: hidden;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    box-shadow: 0 2px 12px var(--shadow);
+  }
+
+  .panel:hover { border-color: var(--border2); }
+
+  .panel-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+
+  .panel-dots { display: flex; gap: 6px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot.red { background: #ef4444; }
+  .dot.yellow { background: #f59e0b; }
+  .dot.green { background: #10b981; }
+  .panel-title { font-size: 10px; color: var(--text3); letter-spacing: 2px; font-weight: 500; }
+
+  /* TOOLBAR */
+  .toolbar {
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+    flex-wrap: wrap;
+  }
+
+  .tb-btn {
+    display: flex; align-items: center; gap: 5px;
+    background: var(--bg); border: 1px solid var(--border2);
+    border-radius: 6px; color: var(--text2);
+    font-family: var(--mono); font-size: 10px;
+    padding: 4px 9px; cursor: pointer;
+    transition: all 0.15s; white-space: nowrap;
+  }
+
+  .tb-btn:hover { border-color: var(--accent); color: var(--accent2); background: rgba(124,58,237,0.08); }
+  .tb-sep { width: 1px; height: 18px; background: var(--border2); margin: 0 2px; }
+
+  /* LANG ROW */
+  .lang-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px; border-bottom: 1px solid var(--border);
+  }
+
+  .lang-label { font-size: 9px; color: var(--text3); letter-spacing: 2px; }
+
+  .lang-select {
+    background: var(--bg); border: 1px solid var(--border2);
+    border-radius: 6px; color: var(--text);
+    font-family: var(--mono); font-size: 12px;
+    padding: 4px 28px 4px 10px; cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2394a3b8'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 8px center;
+    outline: none; transition: border-color 0.2s;
+  }
+
+  .lang-select:focus { border-color: var(--accent); }
+
+  /* STRICTNESS */
+  .strictness-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 12px; border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+
+  .strictness-label { font-size: 9px; color: var(--text3); letter-spacing: 2px; white-space: nowrap; }
+
+  .slider-wrap { flex: 1; }
+
+  input[type=range] {
+    width: 100%; -webkit-appearance: none;
+    height: 4px; border-radius: 4px;
+    background: var(--border2); outline: none; cursor: pointer;
+  }
+
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--accent2);
+    box-shadow: 0 0 8px rgba(168,85,247,0.5);
+    cursor: pointer; transition: transform 0.15s;
+  }
+
+  input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+
+  .strictness-val {
+    font-size: 10px; color: var(--accent2); font-weight: 600;
+    min-width: 70px; text-align: right;
+  }
+
+  /* FOCUS CHIPS */
+  .focus-row {
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px 12px; border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+
+  .focus-label { font-size: 9px; color: var(--text3); letter-spacing: 2px; margin-right: 2px; }
+
+  .focus-chip {
+    padding: 3px 10px; border-radius: 20px;
+    border: 1px solid var(--border2);
+    font-size: 10px; color: var(--text2);
+    cursor: pointer; background: var(--bg);
+    transition: all 0.15s; font-family: var(--mono);
+    user-select: none;
+  }
+
+  .focus-chip:hover { border-color: var(--accent); color: var(--accent2); }
+  .focus-chip.active { background: rgba(124,58,237,0.15); border-color: var(--accent2); color: var(--accent2); }
+
+  /* EDITOR */
+  .editor-wrap { display: flex; min-height: 220px; }
+
+  .line-numbers {
+    padding: 14px 10px 14px 12px;
+    background: var(--surface2); border-right: 1px solid var(--border);
+    color: var(--text3); font-size: 11px; line-height: 1.7;
+    text-align: right; user-select: none; min-width: 38px;
+    white-space: pre; overflow: hidden;
+  }
+
+  #codeInput {
+    flex: 1; min-height: 220px;
+    background: transparent; border: none;
+    color: var(--green2); font-family: var(--mono);
+    font-size: 12.5px; line-height: 1.7;
+    padding: 14px; resize: none; outline: none;
+    caret-color: var(--accent2); tab-size: 2;
+  }
+
+  #codeInput::placeholder { color: var(--text3); }
+
+  /* COUNTER */
+  .counter-bar {
+    display: flex; gap: 14px; align-items: center;
+    padding: 6px 12px;
+    border-top: 1px solid var(--border);
+    background: var(--surface2);
+    font-size: 10px; color: var(--text3);
+  }
+
+  .counter-bar span { display: flex; align-items: center; gap: 4px; }
+  .counter-bar b { color: var(--text2); }
+
+  /* HISTORY */
+  .history-section { border-top: 1px solid var(--border); }
+
+  .history-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 12px; background: var(--surface2);
+    font-size: 9px; color: var(--text3); letter-spacing: 2px;
+    cursor: pointer; transition: color 0.15s;
+  }
+
+  .history-header:hover { color: var(--text2); }
+  .history-toggle { transition: transform 0.2s; display: inline-block; }
+  .history-toggle.open { transform: rotate(180deg); }
+  .history-list { display: none; }
+  .history-list.open { display: block; }
+
+  .history-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 7px 12px; border-bottom: 1px solid var(--border);
+    cursor: pointer; transition: background 0.15s;
+    font-size: 11px; color: var(--text2); gap: 8px;
+  }
+
+  .history-item:hover { background: rgba(124,58,237,0.06); color: var(--text); }
+  .history-item:last-child { border-bottom: none; }
+
+  .hist-lang {
+    font-size: 9px; background: rgba(124,58,237,0.15);
+    color: var(--accent2); padding: 2px 7px;
+    border-radius: 10px; flex-shrink: 0;
+  }
+
+  .hist-preview { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hist-score { font-size: 10px; font-weight: 600; flex-shrink: 0; }
+  .hist-score.good { color: var(--green2); }
+  .hist-score.avg { color: var(--yellow); }
+  .hist-score.bad { color: var(--red); }
+  .history-empty { padding: 12px; font-size: 11px; color: var(--text3); text-align: center; }
+
+  #fileUpload { display: none; }
+
+  /* RIGHT PANEL */
+  .analysis-content { padding: 20px; display: flex; flex-direction: column; gap: 20px; }
+
+  .score-section { display: flex; align-items: center; gap: 16px; }
+
+  .score-ring { position: relative; width: 80px; height: 80px; flex-shrink: 0; }
+  .score-ring svg { transform: rotate(-90deg); width: 80px; height: 80px; }
+  .score-ring circle { fill: none; stroke-width: 5; }
+  .score-ring .track { stroke: var(--border2); }
+  .score-ring .fill {
+    stroke: var(--green2); stroke-linecap: round;
+    stroke-dasharray: 220; stroke-dashoffset: 220;
+    transition: stroke-dashoffset 1s cubic-bezier(0.4,0,0.2,1), stroke 0.3s;
+    filter: drop-shadow(0 0 6px var(--green2));
+  }
+
+  .score-number {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--sans); font-size: 22px; font-weight: 800; color: var(--text);
+  }
+
+  .score-meta { flex: 1; }
+  .score-label { font-size: 9px; color: var(--text3); letter-spacing: 2px; margin-bottom: 4px; }
+  .score-grade { font-family: var(--sans); font-size: 16px; font-weight: 700; color: var(--green2); margin-bottom: 6px; }
+  .score-bar-wrap { height: 4px; background: var(--border2); border-radius: 4px; overflow: hidden; }
+  .score-bar { height: 100%; border-radius: 4px; width: 0%; transition: width 1s cubic-bezier(0.4,0,0.2,1); }
+
+  .section-label { display: flex; align-items: center; gap: 8px; font-size: 9px; color: var(--text3); letter-spacing: 2px; margin-bottom: 8px; font-weight: 600; }
+
+  .explanation-box, .issues-box {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 8px; padding: 14px;
+    font-size: 12px; color: var(--text2); line-height: 1.7; min-height: 44px;
+    font-family: var(--mono);
+  }
+
+  .issue-item { display: flex; align-items: flex-start; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border); color: var(--red); }
+  .issue-item:last-child { border-bottom: none; }
+
+  /* RUN */
+  .run-section { margin-bottom: 16px; }
+
+  .run-btn {
+    width: 100%; padding: 18px;
+    background: linear-gradient(135deg, var(--accent), #9333ea);
+    border: none; border-radius: 12px; color: #fff;
+    font-family: var(--sans); font-size: 15px; font-weight: 800; letter-spacing: 3px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
+    transition: all 0.2s; box-shadow: 0 0 30px rgba(124,58,237,0.3);
+    position: relative; overflow: hidden;
+  }
+
+  .run-btn::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
+    opacity: 0; transition: opacity 0.2s;
+  }
+
+  .run-btn:hover::before { opacity: 1; }
+  .run-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 40px rgba(124,58,237,0.5); }
+  .run-btn:active { transform: translateY(0); }
+  .run-btn.loading { pointer-events: none; opacity: 0.8; }
+
+  .spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; display: none; }
+  .run-btn.loading .spinner { display: block; }
+  .run-btn.loading .bolt { display: none; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .hint { text-align: center; font-size: 11px; color: var(--text3); margin-top: 10px; }
+  .hint kbd { background: var(--surface2); border: 1px solid var(--border2); border-radius: 4px; padding: 2px 6px; font-family: var(--mono); font-size: 10px; color: var(--text2); }
+
+  .fixed-content { padding: 16px; min-height: 80px; font-size: 12.5px; color: var(--green2); line-height: 1.7; white-space: pre-wrap; font-family: var(--mono); }
+  .fixed-content.empty { color: var(--text3); }
+
+  /* TOAST */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(60px);
+    background: var(--surface2); border: 1px solid var(--border2);
+    padding: 10px 20px; border-radius: 30px;
+    font-size: 12px; color: var(--text2);
+    box-shadow: 0 4px 20px var(--shadow);
+    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    z-index: 999; pointer-events: none;
+  }
+
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  @keyframes shimmer { 0%{background-position:-200% 0;} 100%{background-position:200% 0;} }
+  .loading-line {
+    height: 12px; border-radius: 4px;
+    background: linear-gradient(90deg, var(--border) 25%, var(--border2) 50%, var(--border) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite; margin-bottom: 8px;
+  }
+</style>
+</head>
+<body>
+<div class="wrapper">
+  <header>
+    <div class="logo">
+      <div class="logo-icon">⚡</div>
+      Intelli<span>Review</span>
+    </div>
+    <div class="status-badge">
+      <div class="status-dot"></div>
+      AI ONLINE
+    </div>
+  </header>
+
+  <div class="main-grid">
+    <!-- LEFT PANEL -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-dots">
+          <div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div>
+        </div>
+        <div class="panel-title" id="inputTitle">● CODE_INPUT.PY</div>
+        <div></div>
+      </div>
+
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <button class="tb-btn" onclick="document.getElementById('fileUpload').click()">📁 Upload File</button>
+        <input type="file" id="fileUpload" accept=".py,.js,.ts,.java,.cpp,.go,.rs,.sql,.txt" onchange="handleFileUpload(event)">
+        <div class="tb-sep"></div>
+        <button class="tb-btn" onclick="copyCode()">📋 Copy</button>
+        <button class="tb-btn" onclick="clearCode()">🗑 Clear</button>
+      </div>
+
+      <!-- Language -->
+      <div class="lang-row">
+        <span class="lang-label">// LANGUAGE</span>
+        <select class="lang-select" id="langSelect" onchange="updateTitles()">
+          <option>Python</option>
+          <option>JavaScript</option>
+          <option>TypeScript</option>
+          <option>Java</option>
+          <option>C++</option>
+          <option>Go</option>
+          <option>Rust</option>
+          <option>SQL</option>
+        </select>
+      </div>
+
+      <!-- Strictness -->
+      <div class="strictness-row">
+        <span class="strictness-label">// STRICTNESS</span>
+        <div class="slider-wrap">
+          <input type="range" id="strictSlider" min="1" max="3" step="1" value="2" oninput="updateStrictness()">
+        </div>
+        <span class="strictness-val" id="strictVal">Standard</span>
+      </div>
+
+      <!-- Focus -->
+      <div class="focus-row">
+        <span class="focus-label">// FOCUS</span>
+        <span class="focus-chip active" onclick="this.classList.toggle('active')">Security</span>
+        <span class="focus-chip active" onclick="this.classList.toggle('active')">Performance</span>
+        <span class="focus-chip active" onclick="this.classList.toggle('active')">Readability</span>
+      </div>
+
+      <!-- Editor -->
+      <div class="editor-wrap">
+        <div class="line-numbers" id="lineNumbers">1</div>
+        <textarea id="codeInput"
+          placeholder="// Paste your code here...&#10;// or upload a file above&#10;// Ctrl + Enter to analyze"
+          oninput="updateEditor()" onscroll="syncScroll()" onkeydown="handleTab(event)"></textarea>
+      </div>
+
+      <!-- Counter -->
+      <div class="counter-bar">
+        <span>Lines: <b id="lineCount">0</b></span>
+        <span>Chars: <b id="charCount">0</b></span>
+        <span>Words: <b id="wordCount">0</b></span>
+      </div>
+
+      <!-- History -->
+      <div class="history-section">
+        <div class="history-header" onclick="toggleHistory()">
+          <span>// HISTORY (last 5)</span>
+          <span class="history-toggle" id="histToggle">▼</span>
+        </div>
+        <div class="history-list" id="historyList">
+          <div class="history-empty">No analysis history yet.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-dots">
+          <div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div>
+        </div>
+        <div class="panel-title">● ANALYSIS_OUTPUT</div>
+        <div></div>
+      </div>
+      <div class="analysis-content">
+        <div class="score-section">
+          <div class="score-ring">
+            <svg viewBox="0 0 80 80">
+              <circle class="track" cx="40" cy="40" r="35"/>
+              <circle class="fill" id="scoreRing" cx="40" cy="40" r="35"/>
+            </svg>
+            <div class="score-number" id="scoreNum">—</div>
+          </div>
+          <div class="score-meta">
+            <div class="score-label">// QUALITY SCORE</div>
+            <div class="score-grade" id="scoreGrade">Awaiting analysis...</div>
+            <div class="score-bar-wrap"><div class="score-bar" id="scoreBar"></div></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="section-label">💡 AI_EXPLANATION</div>
+          <div class="explanation-box" id="explanation">Run analysis to see AI insights about your code.</div>
+        </div>
+
+        <div>
+          <div class="section-label">🔍 ISSUES_FOUND</div>
+          <div class="issues-box" id="issues">No issues detected yet.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RUN BUTTON -->
+  <div class="run-section">
+    <button class="run-btn" id="runBtn" onclick="analyzeCode()">
+      <div class="spinner"></div>
+      <span class="bolt">⚡</span>
+      <span id="btnText">RUN ANALYSIS</span>
+    </button>
+    <div class="hint">or press <kbd>Ctrl</kbd> + <kbd>Enter</kbd></div>
+  </div>
+
+  <!-- FIXED CODE -->
+  <div class="panel">
+    <div class="panel-header">
+      <div class="panel-dots">
+        <div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div>
+      </div>
+      <div class="panel-title" id="fixedTitle">● FIXED_CODE.PY</div>
+      <div></div>
+    </div>
+    <div class="fixed-content empty" id="fixedCode">// Fixed code will appear here after analysis.</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const CIRC = 2 * Math.PI * 35;
+  document.querySelector('.fill').style.strokeDasharray = CIRC;
+  const strictLabels = ['Beginner', 'Standard', 'Senior Dev'];
+  let historyData = [];
+
+  // ── EDITOR ──
+  function updateEditor() {
+    const ta = document.getElementById('codeInput');
+    const lines = ta.value.split('\n');
+    document.getElementById('lineNumbers').textContent = lines.map((_,i) => i+1).join('\n');
+    document.getElementById('lineCount').textContent = lines.length;
+    document.getElementById('charCount').textContent = ta.value.length;
+    document.getElementById('wordCount').textContent = ta.value.trim() ? ta.value.trim().split(/\s+/).length : 0;
+  }
+
+  function syncScroll() {
+    document.getElementById('lineNumbers').scrollTop = document.getElementById('codeInput').scrollTop;
+  }
+
+  function handleTab(e) {
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      const ta = document.getElementById('codeInput');
+      const s = ta.selectionStart;
+      ta.value = ta.value.substring(0,s) + '  ' + ta.value.substring(ta.selectionEnd);
+      ta.selectionStart = ta.selectionEnd = s + 2;
+      updateEditor();
+    }
+  }
+
+  // ── TOOLBAR ──
+  function copyCode() {
+    const code = document.getElementById('codeInput').value;
+    if (!code) { showToast('⚠ Nothing to copy'); return; }
+    navigator.clipboard.writeText(code).then(() => showToast('✓ Copied!'));
+  }
+
+  function clearCode() {
+    document.getElementById('codeInput').value = '';
+    updateEditor();
+    showToast('✓ Cleared');
+  }
+
+  function handleFileUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const ext = file.name.split('.').pop().toLowerCase();
+    const langMap = {py:'Python',js:'JavaScript',ts:'TypeScript',java:'Java',cpp:'C++',go:'Go',rs:'Rust',sql:'SQL'};
+    if (langMap[ext]) {
+      const sel = document.getElementById('langSelect');
+      [...sel.options].forEach((o,i) => { if(o.text===langMap[ext]) sel.selectedIndex=i; });
+      updateTitles();
+    }
+    const reader = new FileReader();
+    reader.onload = ev => {
+      document.getElementById('codeInput').value = ev.target.result;
+      updateEditor();
+      showToast(`✓ Loaded ${file.name}`);
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  }
+
+  function updateTitles() {
+    const lang = document.getElementById('langSelect').value;
+    const extMap = {Python:'PY',JavaScript:'JS',TypeScript:'TS',Java:'JAVA','C++':'CPP',Go:'GO',Rust:'RS',SQL:'SQL'};
+    const ext = extMap[lang] || 'TXT';
+    document.getElementById('inputTitle').textContent = `● CODE_INPUT.${ext}`;
+    document.getElementById('fixedTitle').textContent = `● FIXED_CODE.${ext}`;
+  }
+
+  // ── STRICTNESS ──
+  function updateStrictness() {
+    const v = document.getElementById('strictSlider').value;
+    document.getElementById('strictVal').textContent = strictLabels[v-1];
+  }
+
+  // ── HISTORY ──
+  function toggleHistory() {
+    document.getElementById('historyList').classList.toggle('open');
+    document.getElementById('histToggle').classList.toggle('open');
+  }
+
+  function addToHistory(code, lang, score) {
+    historyData.unshift({code, lang, score, preview: code.trim().split('\n')[0].substring(0,38)});
+    if (historyData.length > 5) historyData.pop();
+    renderHistory();
+  }
+
+  function renderHistory() {
+    const list = document.getElementById('historyList');
+    if (historyData.length === 0) {
+      list.innerHTML = '<div class="history-empty">No analysis history yet.</div>';
+      return;
+    }
+    list.innerHTML = historyData.map((h,i) => {
+      const cls = h.score >= 7 ? 'good' : h.score >= 5 ? 'avg' : 'bad';
+      return `<div class="history-item" onclick="loadHistory(${i})">
+        <span class="hist-lang">${h.lang}</span>
+        <span class="hist-preview">${h.preview || '...'}</span>
+        <span class="hist-score ${cls}">${h.score}/10</span>
+      </div>`;
+    }).join('');
+  }
+
+  function loadHistory(i) {
+    const h = historyData[i];
+    document.getElementById('codeInput').value = h.code;
+    const sel = document.getElementById('langSelect');
+    [...sel.options].forEach((o,idx) => { if(o.text===h.lang) sel.selectedIndex=idx; });
+    updateEditor(); updateTitles();
+    showToast('✓ Loaded from history');
+  }
+
+  // ── TOAST ──
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  // ── SCORE ──
+  function getGrade(s) {
+    if (s>=9) return {label:'Excellent Quality',color:'#34d399'};
+    if (s>=7) return {label:'Good Quality',color:'#34d399'};
+    if (s>=5) return {label:'Average Quality',color:'#f59e0b'};
+    if (s>=3) return {label:'Needs Improvement',color:'#ef4444'};
+    return {label:'Poor Quality',color:'#ef4444'};
+  }
+
+  function setScore(score) {
+    const g = getGrade(score);
+    const ring = document.getElementById('scoreRing');
+    ring.style.strokeDashoffset = CIRC - (score/10)*CIRC;
+    ring.style.stroke = g.color;
+    ring.style.filter = `drop-shadow(0 0 6px ${g.color})`;
+    document.getElementById('scoreNum').textContent = score;
+    const gr = document.getElementById('scoreGrade');
+    gr.textContent = g.label; gr.style.color = g.color;
+    const bar = document.getElementById('scoreBar');
+    bar.style.width = `${score*10}%`;
+    bar.style.background = `linear-gradient(90deg, ${g.color}88, ${g.color})`;
+    bar.style.boxShadow = `0 0 8px ${g.color}`;
+  }
+
+  function showLoading() {
+    ['explanation','issues','fixedCode'].forEach(id => {
+      document.getElementById(id).innerHTML =
+        '<div class="loading-line" style="width:90%"></div>' +
+        '<div class="loading-line" style="width:70%"></div>' +
+        '<div class="loading-line" style="width:55%"></div>';
+    });
+  }
+
+  // ── ANALYZE ──
+  async function analyzeCode() {
+    const code = document.getElementById('codeInput').value.trim();
+    const lang = document.getElementById('langSelect').value;
+    const strict = strictLabels[document.getElementById('strictSlider').value - 1];
+    const focus = [...document.querySelectorAll('.focus-chip.active')].map(c => c.textContent);
+
+    if (!code) { showToast('⚠ Paste some code first'); return; }
+
+    const btn = document.getElementById('runBtn');
+    btn.classList.add('loading');
+    document.getElementById('btnText').textContent = 'ANALYZING...';
+    showLoading();
+
+    const strictStr = strict === 'Beginner' ? 'Be lenient and educational.' :
+                      strict === 'Senior Dev' ? 'Apply strict production-level standards.' :
+                      'Apply standard professional review standards.';
+    const focusStr = focus.length ? `Focus especially on: ${focus.join(', ')}.` : '';
+
+    const prompt = `You are a senior ${lang} code reviewer. ${strictStr} ${focusStr}
+Respond ONLY with valid JSON:
+{"score":<1-10>,"explanation":"<2-3 sentences>","issues":["<issue>"],"fixedCode":"<improved code or No fix needed.>"}
+Code:
+\`\`\`${lang}
+${code}
+\`\`\``;
+
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({
+          model:"claude-sonnet-4-20250514",
+          max_tokens:1000,
+          messages:[{role:"user",content:prompt}]
+        })
+      });
+      const data = await res.json();
+      const raw = data.content.map(i=>i.text||'').join('');
+      const result = JSON.parse(raw.replace(/```json|```/g,'').trim());
+
+      setScore(result.score);
+      document.getElementById('explanation').textContent = result.explanation;
+
+      const issuesEl = document.getElementById('issues');
+      issuesEl.innerHTML = (!result.issues || result.issues.length === 0)
+        ? '<span style="color:var(--green2)">✓ No issues found.</span>'
+        : result.issues.map(i=>`<div class="issue-item"><span>⚠</span><span>${i}</span></div>`).join('');
+
+      const fixedEl = document.getElementById('fixedCode');
+      fixedEl.className = 'fixed-content';
+      fixedEl.textContent = result.score >= 8 ? '✓ No fix needed.' : result.fixedCode;
+
+      addToHistory(code, lang, result.score);
+      if (!document.getElementById('historyList').classList.contains('open')) toggleHistory();
+
+    } catch(err) {
+      document.getElementById('explanation').textContent = '⚠ Analysis failed. Check connection.';
+      document.getElementById('issues').textContent = err.message;
+    }
+
+    btn.classList.remove('loading');
+    document.getElementById('btnText').textContent = 'RUN ANALYSIS';
+  }
+
+  document.addEventListener('keydown', e => { if(e.ctrlKey && e.key==='Enter') analyzeCode(); });
+
+  updateEditor();
+  updateTitles();
+  updateStrictness();
+</script>
+</body>
+</html>
