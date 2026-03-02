@@ -1,13 +1,12 @@
 from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.exc import SQLAlchemyError
-from datetime import datetime
+from datetime import datetime, timezone
 import logging
 import os
 
 logger = logging.getLogger(__name__)
 
-# Use environment variable or default
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./reviews.db")
 
 engine = create_engine(
@@ -37,7 +36,7 @@ class ReviewRecord(Base):
     issues = Column(Text)
     ai_explanation = Column(Text)
     fixed_code = Column(Text)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
 def init_db():
