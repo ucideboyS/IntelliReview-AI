@@ -1,405 +1,124 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>IntelliReview</title>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
-<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  :root {
-    --bg: #0a0d12;
-    --surface: #0f1318;
-    --surface2: #151b22;
-    --border: #1e2730;
-    --border2: #252f3a;
-    --accent: #7c3aed;
-    --accent2: #a855f7;
-    --green: #10b981;
-    --green2: #34d399;
-    --red: #ef4444;
-    --yellow: #f59e0b;
-    --blue: #3b82f6;
-    --text: #e2e8f0;
-    --text2: #94a3b8;
-    --text3: #4b5563;
-    --mono: 'JetBrains Mono', monospace;
-    --sans: 'Syne', sans-serif;
-    --grid-color: rgba(124,58,237,0.03);
-    --glow-color: rgba(124,58,237,0.08);
-    --shadow: rgba(0,0,0,0.3);
-  }
-
-  @media (prefers-color-scheme: light) {
-    :root {
-      --bg: #f5f7fa; --surface: #ffffff; --surface2: #eef1f6;
-      --border: #dde2ec; --border2: #c8d0e0;
-      --accent: #7c3aed; --accent2: #9333ea;
-      --green: #059669; --green2: #10b981;
-      --red: #dc2626; --yellow: #d97706; --blue: #2563eb;
-      --text: #1e293b; --text2: #475569; --text3: #94a3b8;
-      --grid-color: rgba(124,58,237,0.04);
-      --glow-color: rgba(124,58,237,0.06);
-      --shadow: rgba(0,0,0,0.08);
-    }
-  }
-
-  body {
-    background: var(--bg); color: var(--text);
-    font-family: var(--mono); min-height: 100vh; overflow-x: hidden;
-    transition: background 0.3s, color 0.3s;
-  }
-
-  body::before {
-    content: ''; position: fixed; inset: 0;
-    background-image: linear-gradient(var(--grid-color) 1px, transparent 1px),
-      linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
-    background-size: 40px 40px; pointer-events: none; z-index: 0;
-  }
-
-  body::after {
-    content: ''; position: fixed; top: -200px; right: -200px;
-    width: 600px; height: 600px;
-    background: radial-gradient(circle, var(--glow-color) 0%, transparent 70%);
-    pointer-events: none; z-index: 0;
-  }
-
-  .wrapper { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 0 24px 60px; }
-
-  header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 20px 0; border-bottom: 1px solid var(--border); margin-bottom: 32px;
-  }
-
-  .logo {
-    display: flex; align-items: center; gap: 10px;
-    font-family: var(--sans); font-size: 22px; font-weight: 800; letter-spacing: -0.5px;
-  }
-
-  .logo-icon {
-    width: 36px; height: 36px;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    border-radius: 10px; display: flex; align-items: center; justify-content: center;
-    font-size: 18px; box-shadow: 0 0 20px rgba(124,58,237,0.4);
-  }
-
-  .logo span { color: var(--accent2); }
-
-  .status-badge {
-    display: flex; align-items: center; gap: 8px;
-    background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.2);
-    border-radius: 20px; padding: 6px 14px;
-    font-size: 11px; color: var(--green2); letter-spacing: 1px; font-weight: 600;
-  }
-
-  .status-dot {
-    width: 7px; height: 7px; background: var(--green2); border-radius: 50%;
-    animation: pulse 2s infinite; box-shadow: 0 0 8px var(--green2);
-  }
-
-  @keyframes pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.5; transform: scale(0.8); }
-  }
-
-  .main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
-
-  .panel {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 12px; overflow: hidden;
-    transition: border-color 0.2s, box-shadow 0.2s;
-    box-shadow: 0 2px 12px var(--shadow);
-  }
-
-  .panel:hover { border-color: var(--border2); }
-
-  .panel-header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 12px 16px; border-bottom: 1px solid var(--border); background: var(--surface2);
-  }
-
-  .panel-dots { display: flex; gap: 6px; }
-  .dot { width: 10px; height: 10px; border-radius: 50%; }
-  .dot.red { background: #ef4444; }
-  .dot.yellow { background: #f59e0b; }
-  .dot.green { background: #10b981; }
-
-  .panel-title { font-size: 10px; color: var(--text3); letter-spacing: 2px; font-weight: 500; }
-
-  .mode-toggle {
-    display: flex; gap: 4px; padding: 10px 16px;
-    border-bottom: 1px solid var(--border); background: var(--surface2);
-  }
-
-  .mode-btn {
-    flex: 1; padding: 8px 10px;
-    border: 1px solid var(--border2); border-radius: 7px;
-    background: transparent; color: var(--text3);
-    font-family: var(--mono); font-size: 10px; letter-spacing: 1.5px; font-weight: 600;
-    cursor: pointer; transition: all 0.2s;
-    display: flex; align-items: center; justify-content: center; gap: 6px;
-  }
-
-  .mode-btn:hover { color: var(--text2); border-color: var(--accent); }
-  .mode-btn.active {
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    border-color: transparent; color: #fff;
-    box-shadow: 0 0 14px rgba(124,58,237,0.35);
-  }
-
-  .lang-selector {
-    padding: 10px 16px; border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; gap: 8px;
-  }
-
-  .lang-label { font-size: 9px; color: var(--text3); letter-spacing: 2px; }
-
-  .lang-select {
-    background: var(--bg); border: 1px solid var(--border2); border-radius: 6px;
-    color: var(--text); font-family: var(--mono); font-size: 12px;
-    padding: 4px 28px 4px 10px; cursor: pointer; appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2394a3b8'/%3E%3C/svg%3E");
-    background-repeat: no-repeat; background-position: right 8px center;
-    outline: none; transition: border-color 0.2s;
-  }
-
-  .lang-select:focus { border-color: var(--accent); }
-
-  #codeInput {
-    width: 100%; min-height: 300px; background: transparent; border: none;
-    color: var(--green2); font-family: var(--mono); font-size: 12.5px; line-height: 1.7;
-    padding: 16px; resize: none; outline: none; caret-color: var(--accent2);
-  }
-
-  #codeInput::placeholder { color: var(--text3); }
-
-  .github-mode { padding: 18px; display: none; flex-direction: column; gap: 14px; }
-  .github-mode.active { display: flex; }
-
-  .gh-info {
-    background: rgba(59,130,246,0.07); border: 1px solid rgba(59,130,246,0.15);
-    border-radius: 8px; padding: 11px 14px; font-size: 11px; color: var(--text2); line-height: 1.7;
-  }
-
-  .gh-info strong { color: var(--blue); }
-
-  .gh-label { font-size: 9px; color: var(--text3); letter-spacing: 2px; font-weight: 600; margin-bottom: 6px; display: block; }
-
-  .gh-input {
-    width: 100%; background: var(--bg); border: 1px solid var(--border2);
-    border-radius: 8px; color: var(--text); font-family: var(--mono); font-size: 12px;
-    padding: 10px 14px; outline: none; transition: border-color 0.2s;
-  }
-
-  .gh-input:focus { border-color: var(--accent); }
-  .gh-input::placeholder { color: var(--text3); }
-
-  .gh-token-note { font-size: 10px; color: var(--text3); line-height: 1.5; margin-top: 5px; }
-
-  .file-list { display: flex; flex-direction: column; gap: 3px; max-height: 130px; overflow-y: auto; }
-
-  .file-item {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 6px 10px; background: var(--bg); border: 1px solid var(--border);
-    border-radius: 6px; font-size: 11px; transition: border-color 0.15s;
-  }
-
-  .file-item:hover { border-color: var(--accent2); }
-  .file-name { color: var(--text2); }
-  .file-lang { font-size: 9px; color: var(--text3); letter-spacing: 1px; }
-
-  .analysis-content { padding: 20px; display: flex; flex-direction: column; gap: 20px; }
-
-  .score-section { display: flex; align-items: center; gap: 16px; }
-
-  .score-ring { position: relative; width: 80px; height: 80px; flex-shrink: 0; }
-  .score-ring svg { transform: rotate(-90deg); width: 80px; height: 80px; }
-  .score-ring circle { fill: none; stroke-width: 5; }
-  .score-ring .track { stroke: var(--border2); }
-  .score-ring .fill {
-    stroke: var(--green2); stroke-linecap: round;
-    stroke-dasharray: 220; stroke-dashoffset: 220;
-    transition: stroke-dashoffset 1s cubic-bezier(0.4,0,0.2,1), stroke 0.3s;
-    filter: drop-shadow(0 0 6px var(--green2));
-  }
-
-  .score-number {
-    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-    font-family: var(--sans); font-size: 22px; font-weight: 800; color: var(--text);
-  }
-
-  .score-meta { flex: 1; }
-  .score-label { font-size: 9px; color: var(--text3); letter-spacing: 2px; margin-bottom: 4px; }
-  .score-grade { font-family: var(--sans); font-size: 16px; font-weight: 700; color: var(--green2); margin-bottom: 6px; }
-  .score-bar-wrap { height: 4px; background: var(--border2); border-radius: 4px; overflow: hidden; }
-  .score-bar {
-    height: 100%; background: linear-gradient(90deg, var(--green), var(--green2));
-    border-radius: 4px; width: 0%;
-    transition: width 1s cubic-bezier(0.4,0,0.2,1);
-    box-shadow: 0 0 8px var(--green);
-  }
-
-  .section-label {
-    display: flex; align-items: center; gap: 8px;
-    font-size: 9px; color: var(--text3); letter-spacing: 2px; margin-bottom: 8px; font-weight: 600;
-  }
-
-  .explanation-box, .issues-box {
-    background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
-    padding: 14px; font-size: 12px; color: var(--text2); line-height: 1.7;
-    min-height: 54px; font-family: var(--mono); max-height: 300px; overflow-y: auto;
-  }
-
-  /* Per-file issue card styles */
-  .file-issue-card {
-    background: var(--surface2); border: 1px solid var(--border);
-    border-radius: 8px; padding: 12px 14px; margin-bottom: 10px;
-  }
-
-  .file-issue-card:last-child { margin-bottom: 0; }
-
-  .file-issue-header {
-    display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
-    font-size: 11px; font-weight: 600; color: var(--accent2);
-  }
-
-  .file-issue-text {
-    font-size: 11.5px; color: var(--text2); line-height: 1.7;
-  }
-
-  .issue-item {
-    display: flex; align-items: flex-start; gap: 8px;
-    padding: 6px 0; border-bottom: 1px solid var(--border); color: var(--red);
-  }
-  .issue-item:last-child { border-bottom: none; }
-
-  .repo-breakdown { display: flex; flex-direction: column; gap: 5px; }
-
-  .file-score-item {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 8px 12px; background: var(--bg); border: 1px solid var(--border);
-    border-radius: 8px; font-size: 11px; transition: border-color 0.15s;
-  }
-
-  .file-score-item:hover { border-color: var(--border2); }
-  .file-score-name { color: var(--text2); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-  .file-score-badge {
-    font-family: var(--sans); font-size: 12px; font-weight: 700;
-    padding: 2px 8px; border-radius: 4px;
-    background: rgba(52,211,153,0.1); color: var(--green2); flex-shrink: 0; margin-left: 8px;
-  }
-
-  .file-score-badge.warn { background: rgba(245,158,11,0.1); color: var(--yellow); }
-  .file-score-badge.danger { background: rgba(239,68,68,0.1); color: var(--red); }
-  .file-score-badge.na { background: rgba(148,163,184,0.1); color: var(--text3); }
-
-  .run-section { margin-bottom: 16px; }
-
-  .run-btn {
-    width: 100%; padding: 18px;
-    background: linear-gradient(135deg, var(--accent), #9333ea);
-    border: none; border-radius: 12px; color: #fff;
-    font-family: var(--sans); font-size: 15px; font-weight: 800; letter-spacing: 3px;
-    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
-    transition: all 0.2s; box-shadow: 0 0 30px rgba(124,58,237,0.3);
-    position: relative; overflow: hidden;
-  }
-
-  .run-btn::before {
-    content: ''; position: absolute; inset: 0;
-    background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
-    opacity: 0; transition: opacity 0.2s;
-  }
-
-  .run-btn:hover::before { opacity: 1; }
-  .run-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 40px rgba(124,58,237,0.5); }
-  .run-btn:active { transform: translateY(0); }
-  .run-btn.loading { pointer-events: none; opacity: 0.8; }
-
-  .spinner {
-    width: 16px; height: 16px;
-    border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff;
-    border-radius: 50%; animation: spin 0.7s linear infinite; display: none;
-  }
-
-  .run-btn.loading .spinner { display: block; }
-  .run-btn.loading .bolt { display: none; }
-
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  .hint { text-align: center; font-size: 11px; color: var(--text3); margin-top: 10px; }
-  .hint kbd {
-    background: var(--surface2); border: 1px solid var(--border2);
-    border-radius: 4px; padding: 2px 6px; font-family: var(--mono); font-size: 10px; color: var(--text2);
-  }
-
-  .fixed-content {
-    padding: 16px; min-height: 80px; font-size: 12.5px; color: var(--green2);
-    line-height: 1.7; white-space: pre-wrap; font-family: var(--mono);
-  }
-
-  .fixed-content.empty { color: var(--text3); }
-
-  @keyframes shimmer {
-    0% { background-position: -200% 0; }
-    100% { background-position: 200% 0; }
-  }
-
-  .loading-line {
-    height: 12px; border-radius: 4px;
-    background: linear-gradient(90deg, var(--border) 25%, var(--border2) 50%, var(--border) 75%);
-    background-size: 200% 100%; animation: shimmer 1.5s infinite; margin-bottom: 8px;
-  }
-
-  ::-webkit-scrollbar { width: 4px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
-
-  @media (max-width: 700px) { .main-grid { grid-template-columns: 1fr; } }
-</style>
+<title>IntelliReview AI — Code Intelligence Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-<div class="wrapper">
-  <header>
-    <div class="logo">
-      <div class="logo-icon">⚡</div>
-      Intelli<span>Review</span>
-    </div>
-    <div class="status-badge">
-      <div class="status-dot"></div>
-      Online
-    </div>
-  </header>
 
+<!-- NAVBAR -->
+<nav class="navbar">
+  <div class="nav-inner">
+    <div class="nav-logo">
+      <div class="logo-icon">⚡</div>
+      <span class="logo-text">Intelli<span class="logo-accent">Review</span></span>
+      <span class="logo-badge">AI</span>
+    </div>
+    <div class="nav-links">
+      <a href="#analyzer" class="nav-link active">Analyzer</a>
+      <a href="#" class="nav-link" onclick="openHistory(); return false;">History</a>
+      <a href="#about" class="nav-link">About</a>
+    </div>
+    <div class="nav-right">
+      <div class="status-badge">
+        <div class="status-dot"></div>
+        <span>ONLINE</span>
+      </div>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <span class="theme-icon">🌙</span>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero" id="heroSection">
+  <div class="hero-inner">
+    <div class="hero-tag">⚡ Powered by GPT-4.1-nano via GitHub Models</div>
+    <h1 class="hero-title">
+      AI-Powered<br>
+      <span class="hero-gradient">Code Intelligence</span>
+    </h1>
+    <p class="hero-sub">Paste your code or drop a GitHub URL. Get instant quality scores, issue detection, and AI-generated fixes.</p>
+    <div class="hero-chips">
+      <span class="chip">🔍 Issue Detection</span>
+      <span class="chip">🛠 Auto Fix</span>
+      <span class="chip">📊 Quality Score</span>
+      <span class="chip">🐙 GitHub Repos</span>
+    </div>
+  </div>
+</section>
+
+<!-- MAIN APP -->
+<main class="app-wrapper" id="analyzer">
+
+  <!-- STATS BAR -->
+  <div class="stats-bar" id="statsBar" style="display:none">
+    <div class="stat-item">
+      <span class="stat-value" id="statScore">—</span>
+      <span class="stat-label">Overall Score</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <span class="stat-value" id="statLang">—</span>
+      <span class="stat-label">Language</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <span class="stat-value" id="statGrade">—</span>
+      <span class="stat-label">Grade</span>
+    </div>
+  </div>
+
+  <!-- MAIN GRID -->
   <div class="main-grid">
-    <!-- LEFT PANEL -->
-    <div class="panel">
+
+    <!-- LEFT: INPUT PANEL -->
+    <div class="panel" id="inputPanel">
       <div class="panel-header">
         <div class="panel-dots">
           <div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div>
         </div>
         <div class="panel-title" id="leftPanelTitle">● CODE_INPUT</div>
-        <div></div>
+        <div class="panel-actions"></div>
       </div>
 
       <div class="mode-toggle">
-        <button class="mode-btn active" id="btnPaste" onclick="switchMode('paste')">📋 PASTE CODE</button>
-        <button class="mode-btn" id="btnGithub" onclick="switchMode('github')">🐙 GITHUB REPO</button>
+        <button class="mode-btn active" id="btnPaste" onclick="switchMode('paste')">
+          <span>📋</span> PASTE CODE
+        </button>
+        <button class="mode-btn" id="btnGithub" onclick="switchMode('github')">
+          <span>🐙</span> GITHUB REPO
+        </button>
       </div>
 
-      <!-- PASTE CODE -->
+      <!-- PASTE MODE -->
       <div id="pasteMode">
         <div class="lang-selector">
           <span class="lang-label">// LANGUAGE</span>
           <select class="lang-select" id="langSelect">
-            <option>Python</option><option>JavaScript</option><option>TypeScript</option>
-            <option>Java</option><option>C++</option><option>Go</option>
-            <option>Rust</option><option>SQL</option>
+            <option>Python</option>
+            <option>JavaScript</option>
+            <option>TypeScript</option>
+            <option>Java</option>
+            <option>C++</option>
+            <option>Go</option>
+            <option>Rust</option>
+            <option>SQL</option>
+            <option>PHP</option>
+            <option>C#</option>
           </select>
         </div>
-        <textarea id="codeInput" placeholder="// Paste your code here...&#10;// Press Ctrl + Enter or click RUN ANALYSIS"></textarea>
+        <div class="code-editor-wrap">
+          <div class="line-numbers" id="lineNumbers">1</div>
+          <textarea id="codeInput"
+            placeholder="// Paste your code here...&#10;// Press Ctrl + Enter or click RUN ANALYSIS"
+            oninput="updateLineNumbers()"
+            onscroll="syncScroll(this)"></textarea>
+        </div>
       </div>
 
       <!-- GITHUB MODE -->
@@ -417,47 +136,103 @@
           <span class="gh-label">// GITHUB TOKEN (OPTIONAL)</span>
           <input class="gh-input" id="ghToken" type="password"
             placeholder="ghp_xxxx — required for private repos" />
-          <div class="gh-token-note">Used only for this request. Never stored.</div>
+          <div class="gh-token-note">🔒 Used only for this request. Never stored.</div>
         </div>
         <div id="fileListWrap" style="display:none">
-          <span class="gh-label">// FILES DETECTED <span id="fileCount" style="color:var(--accent2)"></span></span>
+          <span class="gh-label">// FILES DETECTED
+            <span id="fileCount" style="color:var(--accent2)"></span>
+          </span>
           <div class="file-list" id="fileList"></div>
         </div>
       </div>
     </div>
 
-    <!-- ANALYSIS OUTPUT -->
-    <div class="panel">
+    <!-- RIGHT: OUTPUT PANEL -->
+    <div class="panel" id="outputPanel">
       <div class="panel-header">
         <div class="panel-dots">
           <div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div>
         </div>
         <div class="panel-title">● ANALYSIS_OUTPUT</div>
-        <div></div>
+        <div class="panel-actions">
+          <span class="lang-chip" id="outputLangBadge" style="display:none"></span>
+        </div>
       </div>
+
       <div class="analysis-content">
+        <!-- SCORE RING -->
         <div class="score-section">
           <div class="score-ring">
-            <svg viewBox="0 0 80 80">
-              <circle class="track" cx="40" cy="40" r="35"/>
-              <circle class="fill" id="scoreRing" cx="40" cy="40" r="35"/>
+            <svg viewBox="0 0 90 90">
+              <circle class="track" cx="45" cy="45" r="38"/>
+              <circle class="fill" id="scoreRing" cx="45" cy="45" r="38"/>
             </svg>
             <div class="score-number" id="scoreNum">—</div>
           </div>
           <div class="score-meta">
-            <div class="score-label">// QUALITY SCORE</div>
+            <div class="score-label">// OVERALL QUALITY</div>
             <div class="score-grade" id="scoreGrade">Awaiting analysis...</div>
-            <div class="score-bar-wrap"><div class="score-bar" id="scoreBar"></div></div>
+            <div class="score-bar-wrap">
+              <div class="score-bar" id="scoreBar"></div>
+            </div>
           </div>
         </div>
+
+        <!-- 5-DIMENSION METRICS -->
+        <div class="metrics-section" id="metricsSection" style="display:none">
+          <div class="section-label">📊 DIMENSION_SCORES</div>
+          <div class="metrics-grid">
+            <div class="metric-item">
+              <div class="metric-header">
+                <span class="metric-name">Readability</span>
+                <span class="metric-val" id="mRead">—</span>
+              </div>
+              <div class="metric-bar-wrap"><div class="metric-bar bar-read" id="bRead"></div></div>
+            </div>
+            <div class="metric-item">
+              <div class="metric-header">
+                <span class="metric-name">Performance</span>
+                <span class="metric-val" id="mPerf">—</span>
+              </div>
+              <div class="metric-bar-wrap"><div class="metric-bar bar-perf" id="bPerf"></div></div>
+            </div>
+            <div class="metric-item">
+              <div class="metric-header">
+                <span class="metric-name">Maintainability</span>
+                <span class="metric-val" id="mMaint">—</span>
+              </div>
+              <div class="metric-bar-wrap"><div class="metric-bar bar-maint" id="bMaint"></div></div>
+            </div>
+            <div class="metric-item">
+              <div class="metric-header">
+                <span class="metric-name">Security</span>
+                <span class="metric-val" id="mSec">—</span>
+              </div>
+              <div class="metric-bar-wrap"><div class="metric-bar bar-sec" id="bSec"></div></div>
+            </div>
+            <div class="metric-item">
+              <div class="metric-header">
+                <span class="metric-name">Best Practices</span>
+                <span class="metric-val" id="mBest">—</span>
+              </div>
+              <div class="metric-bar-wrap"><div class="metric-bar bar-best" id="bBest"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI EXPLANATION -->
         <div>
           <div class="section-label">💡 AI_EXPLANATION</div>
           <div class="explanation-box" id="explanation">Run analysis to see AI insights about your code.</div>
         </div>
+
+        <!-- ISSUES -->
         <div>
           <div class="section-label">🔍 ISSUES_FOUND</div>
           <div class="issues-box" id="issues">No issues detected yet.</div>
         </div>
+
+        <!-- PER-FILE BREAKDOWN -->
         <div id="repoBreakdownSection" style="display:none">
           <div class="section-label">📁 PER_FILE_BREAKDOWN</div>
           <div class="repo-breakdown" id="repoBreakdown"></div>
@@ -466,7 +241,7 @@
     </div>
   </div>
 
-  <!-- RUN -->
+  <!-- RUN BUTTON -->
   <div class="run-section">
     <button class="run-btn" id="runBtn" onclick="runAnalysis()">
       <div class="spinner"></div>
@@ -476,285 +251,510 @@
     <div class="hint">or press <kbd>Ctrl</kbd> + <kbd>Enter</kbd></div>
   </div>
 
-  <!-- FIXED CODE -->
-  <div class="panel">
+  <!-- FIXED CODE PANEL -->
+  <div class="panel fixed-panel">
     <div class="panel-header">
       <div class="panel-dots">
         <div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div>
       </div>
       <div class="panel-title">● FIXED_CODE</div>
-      <div></div>
+      <div class="panel-actions">
+        <button class="copy-btn" id="copyBtn" onclick="copyFixed()" title="Copy fixed code">
+          <span id="copyIcon">⎘</span> <span id="copyText">COPY</span>
+        </button>
+      </div>
     </div>
-    <div class="fixed-content empty" id="fixedCode">// Suggestions and fixed code will appear here after analysis.</div>
+    <div class="fixed-content empty" id="fixedCode">// AI-generated fixes and suggestions will appear here after analysis.</div>
+  </div>
+
+</main>
+
+<!-- ABOUT -->
+<section class="about-section" id="about">
+  <div class="about-inner">
+    <div class="about-title">🧠 About IntelliReview AI</div>
+    <p class="about-desc">An AI-powered code intelligence platform built with <strong>FastAPI</strong>, <strong>SQLAlchemy</strong>, and <strong>GPT-4.1-nano</strong> via GitHub Models.</p>
+    <div class="about-stack">
+      <span class="stack-chip">FastAPI</span>
+      <span class="stack-chip">Python</span>
+      <span class="stack-chip">SQLite</span>
+      <span class="stack-chip">GPT-4.1-nano</span>
+      <span class="stack-chip">GitHub Models</span>
+      <span class="stack-chip">Pydantic</span>
+    </div>
+  </div>
+</section>
+
+<!-- HISTORY DRAWER -->
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeHistory()"></div>
+<div class="history-drawer" id="historyDrawer">
+  <div class="drawer-header">
+    <div class="drawer-title">📜 Review History</div>
+    <button class="drawer-close" onclick="closeHistory()">✕</button>
+  </div>
+  <div class="drawer-body" id="drawerBody">
+    <div class="drawer-loading">Loading reviews...</div>
   </div>
 </div>
 
 <script>
-  const CIRC = 2 * Math.PI * 35;
-  document.querySelector('.fill').style.strokeDasharray = CIRC;
+// ── THEME ──────────────────────────────────────────────────────────────────
+const root = document.documentElement;
+let isDark = localStorage.getItem('theme') !== 'light';
 
-  let currentMode = 'paste';
+function applyTheme() {
+  root.setAttribute('data-theme', isDark ? 'dark' : 'light');
+  document.querySelector('.theme-icon').textContent = isDark ? '🌙' : '☀️';
+  localStorage.setItem('theme', isDark ? 'dark' : 'light');
+}
+applyTheme();
+function toggleTheme() { isDark = !isDark; applyTheme(); }
 
-  function switchMode(mode) {
-    currentMode = mode;
-    document.getElementById('pasteMode').style.display = mode === 'paste' ? 'block' : 'none';
-    document.getElementById('githubMode').classList.toggle('active', mode === 'github');
-    document.getElementById('btnPaste').classList.toggle('active', mode === 'paste');
-    document.getElementById('btnGithub').classList.toggle('active', mode === 'github');
-    document.getElementById('leftPanelTitle').textContent = mode === 'paste' ? '● CODE_INPUT' : '● GITHUB_ANALYZER';
-    document.getElementById('repoBreakdownSection').style.display = 'none';
-    document.getElementById('fileListWrap').style.display = 'none';
+// ── SCORE RING ─────────────────────────────────────────────────────────────
+const R    = 38;
+const CIRC = 2 * Math.PI * R;
+document.querySelector('.fill').style.strokeDasharray = CIRC;
+
+function getGrade(score) {
+  if (score >= 9) return { label: 'Excellent', color: '#34d399' };
+  if (score >= 7) return { label: 'Good',      color: '#34d399' };
+  if (score >= 5) return { label: 'Average',   color: '#f59e0b' };
+  if (score >= 3) return { label: 'Needs Work', color: '#ef4444' };
+  return               { label: 'Poor',        color: '#ef4444' };
+}
+
+function setScore(score) {
+  const g    = getGrade(score);
+  const ring = document.getElementById('scoreRing');
+  ring.style.strokeDashoffset = CIRC - (score / 10) * CIRC;
+  ring.style.stroke  = g.color;
+  ring.style.filter  = `drop-shadow(0 0 8px ${g.color})`;
+  document.getElementById('scoreNum').textContent  = score;
+  const gradeEl = document.getElementById('scoreGrade');
+  gradeEl.textContent = g.label + ' Quality';
+  gradeEl.style.color = g.color;
+  const bar = document.getElementById('scoreBar');
+  bar.style.width      = `${score * 10}%`;
+  bar.style.background = `linear-gradient(90deg, ${g.color}88, ${g.color})`;
+  bar.style.boxShadow  = `0 0 10px ${g.color}55`;
+  document.getElementById('statScore').textContent  = score + '/10';
+  document.getElementById('statScore').style.color  = g.color;
+  document.getElementById('statGrade').textContent  = g.label;
+  document.getElementById('statGrade').style.color  = g.color;
+  document.getElementById('statsBar').style.display = 'flex';
+}
+
+// ── REAL DIMENSION METRICS ─────────────────────────────────────────────────
+function setMetrics(data) {
+  function animBar(valId, barId, val) {
+    const v = parseFloat(val) || 0;
+    document.getElementById(valId).textContent = v.toFixed(1) + '/10';
+    setTimeout(() => { document.getElementById(barId).style.width = `${v * 10}%`; }, 100);
+  }
+  animBar('mRead',  'bRead',  data.readability);
+  animBar('mPerf',  'bPerf',  data.performance);
+  animBar('mMaint', 'bMaint', data.maintainability);
+  animBar('mSec',   'bSec',   data.security);
+  animBar('mBest',  'bBest',  data.best_practices);
+  document.getElementById('metricsSection').style.display = 'block';
+}
+
+// ── SAFE AVERAGE ───────────────────────────────────────────────────────────
+function safeMean(arr) {
+  const valid = arr.filter(v => typeof v === 'number' && !isNaN(v) && v > 0);
+  if (!valid.length) return 0;
+  return valid.reduce((a, b) => a + b, 0) / valid.length;
+}
+
+// ── LINE NUMBERS ───────────────────────────────────────────────────────────
+function updateLineNumbers() {
+  const ta    = document.getElementById('codeInput');
+  const lines = ta.value.split('\n').length;
+  document.getElementById('lineNumbers').innerHTML =
+    Array.from({ length: lines }, (_, i) => i + 1).join('<br>');
+}
+function syncScroll(el) {
+  document.getElementById('lineNumbers').scrollTop = el.scrollTop;
+}
+updateLineNumbers();
+
+// ── MODE SWITCH ────────────────────────────────────────────────────────────
+let currentMode = 'paste';
+function switchMode(mode) {
+  currentMode = mode;
+  document.getElementById('pasteMode').style.display =
+    mode === 'paste' ? 'block' : 'none';
+  document.getElementById('githubMode').classList.toggle('active',  mode === 'github');
+  document.getElementById('btnPaste').classList.toggle('active',    mode === 'paste');
+  document.getElementById('btnGithub').classList.toggle('active',   mode === 'github');
+  document.getElementById('leftPanelTitle').textContent =
+    mode === 'paste' ? '● CODE_INPUT' : '● GITHUB_ANALYZER';
+  document.getElementById('repoBreakdownSection').style.display = 'none';
+  document.getElementById('fileListWrap').style.display = 'none';
+}
+
+// ── LOADING SHIMMER ────────────────────────────────────────────────────────
+function showLoading() {
+  ['explanation', 'issues', 'fixedCode'].forEach(id => {
+    document.getElementById(id).innerHTML =
+      [90, 75, 60].map(w =>
+        `<div class="loading-line" style="width:${w}%"></div>`
+      ).join('');
+  });
+  document.getElementById('metricsSection').style.display = 'none';
+  document.getElementById('statsBar').style.display       = 'none';
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// ── COPY FIXED CODE ────────────────────────────────────────────────────────
+function copyFixed() {
+  const text = document.getElementById('fixedCode').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    document.getElementById('copyIcon').textContent = '✓';
+    document.getElementById('copyText').textContent = 'COPIED';
+    document.getElementById('copyBtn').style.color  = 'var(--green2)';
+    setTimeout(() => {
+      document.getElementById('copyIcon').textContent = '⎘';
+      document.getElementById('copyText').textContent = 'COPY';
+      document.getElementById('copyBtn').style.color  = '';
+    }, 2000);
+  });
+}
+
+// ── GITHUB HELPERS ─────────────────────────────────────────────────────────
+function parseGithubUrl(url) {
+  const repoMatch = url.match(/github\.com\/([^\/]+)\/([^\/\?#]+)/);
+  if (!repoMatch) return null;
+  const owner = repoMatch[1];
+  const repo  = repoMatch[2].replace(/\.git$/, '');
+  const fileMatch = url.match(/\/blob\/([^\/]+)\/(.+)/);
+  if (fileMatch) return { owner, repo, type: 'file', branch: fileMatch[1], path: fileMatch[2] };
+  return { owner, repo, type: 'repo' };
+}
+
+async function fetchRawFile(owner, repo, path, branch, token) {
+  const headers = token ? { Authorization: `token ${token}` } : {};
+  const res = await fetch(
+    `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${path}`,
+    { headers }
+  );
+  if (!res.ok) throw new Error(`Cannot fetch: ${path}`);
+  return res.text();
+}
+
+async function fetchRepoFiles(owner, repo, token) {
+  const headers = { Accept: 'application/vnd.github.v3+json' };
+  if (token) headers.Authorization = `token ${token}`;
+  const repoRes = await fetch(
+    `https://api.github.com/repos/${owner}/${repo}`,
+    { headers }
+  );
+  if (!repoRes.ok) throw new Error('Repo not found or private. Add a GitHub token.');
+  const { default_branch } = await repoRes.json();
+  const treeRes = await fetch(
+    `https://api.github.com/repos/${owner}/${repo}/git/trees/${default_branch}?recursive=1`,
+    { headers }
+  );
+  const { tree } = await treeRes.json();
+  const exts = /\.(py|js|ts|jsx|tsx|java|cpp|c|go|rs|rb|php|cs|swift|kt|sql)$/i;
+  return tree
+    .filter(f => f.type === 'blob' && exts.test(f.path) && f.size < 50000)
+    .slice(0, 10)
+    .map(f => ({ path: f.path, branch: default_branch }));
+}
+
+// ── CALL BACKEND ───────────────────────────────────────────────────────────
+// isBatch=true → sends X-Batch-Request header → bypasses rate limiter
+async function callBackend(code, language, isBatch = false) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (isBatch) headers['X-Batch-Request'] = 'true';
+  const res = await fetch('/review-code', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ code, language })
+  });
+  if (!res.ok) throw new Error('Backend API request failed');
+  return res.json();
+}
+
+// ── RENDER SINGLE FILE ─────────────────────────────────────────────────────
+function renderResult(data, lang) {
+  document.getElementById('heroSection').style.display = 'none';
+  const score = parseFloat(data.overall_score ?? data.quality_score) || 0;
+  setScore(parseFloat(score.toFixed(1)));
+  setMetrics(data);
+
+  if (lang) {
+    const badge = document.getElementById('outputLangBadge');
+    badge.textContent   = lang.toUpperCase();
+    badge.style.display = 'inline-block';
+    document.getElementById('statLang').textContent = lang;
   }
 
-  function getGrade(score) {
-    if (score >= 9) return { label: 'Excellent Quality', color: '#34d399' };
-    if (score >= 7) return { label: 'Good Quality',      color: '#34d399' };
-    if (score >= 5) return { label: 'Average Quality',   color: '#f59e0b' };
-    if (score >= 3) return { label: 'Needs Improvement', color: '#ef4444' };
-    return            { label: 'Poor Quality',           color: '#ef4444' };
+  document.getElementById('explanation').textContent =
+    data.ai_explanation || 'No explanation provided.';
+
+  const issuesEl   = document.getElementById('issues');
+  const issuesText = data.issues || '';
+  if (!issuesText || issuesText === 'No issues found.') {
+    issuesEl.innerHTML = '<span class="success-text">✓ No issues found.</span>';
+  } else {
+    issuesEl.innerHTML =
+      `<div class="issue-item">
+         <span class="issue-icon">⚠</span>
+         <span>${escapeHtml(issuesText)}</span>
+       </div>`;
   }
 
-  function setScore(score) {
-    const g = getGrade(score);
-    const ring = document.getElementById('scoreRing');
-    ring.style.strokeDashoffset = CIRC - (score / 10) * CIRC;
-    ring.style.stroke = g.color;
-    ring.style.filter = `drop-shadow(0 0 6px ${g.color})`;
-    document.getElementById('scoreNum').textContent = score;
-    const gradeEl = document.getElementById('scoreGrade');
-    gradeEl.textContent = g.label; gradeEl.style.color = g.color;
-    const bar = document.getElementById('scoreBar');
-    bar.style.width = `${score * 10}%`;
-    bar.style.background = `linear-gradient(90deg, ${g.color}88, ${g.color})`;
-    bar.style.boxShadow = `0 0 8px ${g.color}`;
+  const fixedEl = document.getElementById('fixedCode');
+  fixedEl.className   = 'fixed-content';
+  fixedEl.textContent = data.fixed_code || '✓ No fix needed.';
+}
+
+// ── RENDER REPO RESULT ─────────────────────────────────────────────────────
+function renderRepoResult(results) {
+  document.getElementById('heroSection').style.display = 'none';
+
+  const scored = results.filter(
+    r => !r.skipped && typeof r.overall_score === 'number' && r.overall_score > 0
+  );
+
+  const avg = {
+    overall_score:   parseFloat(safeMean(scored.map(r => r.overall_score)).toFixed(1)),
+    readability:     parseFloat(safeMean(scored.map(r => r.readability)).toFixed(1)),
+    performance:     parseFloat(safeMean(scored.map(r => r.performance)).toFixed(1)),
+    maintainability: parseFloat(safeMean(scored.map(r => r.maintainability)).toFixed(1)),
+    security:        parseFloat(safeMean(scored.map(r => r.security)).toFixed(1)),
+    best_practices:  parseFloat(safeMean(scored.map(r => r.best_practices)).toFixed(1)),
+  };
+
+  setScore(avg.overall_score);
+  setMetrics(avg);
+  document.getElementById('statLang').textContent = 'Multi-File';
+
+  const skipped = results.filter(r => r.skipped).length;
+  const failed  = results.filter(r => !r.skipped && !(r.overall_score > 0)).length;
+  let expl = `Analyzed ${results.length} file(s). ${scored.length} scored · avg ${avg.overall_score}/10. `;
+  if (skipped > 0) expl += `${skipped} empty file(s) skipped. `;
+  if (failed  > 0) expl += `${failed} file(s) failed (API limit?). `;
+  if (scored.length > 0) {
+    const best  = scored.reduce((a, b) => a.overall_score >= b.overall_score ? a : b);
+    const worst = scored.reduce((a, b) => a.overall_score <= b.overall_score ? a : b);
+    expl += `Best: ${best.path} (${best.overall_score}/10). `;
+    if (best.path !== worst.path)
+      expl += `Needs most work: ${worst.path} (${worst.overall_score}/10).`;
+  }
+  document.getElementById('explanation').textContent = expl;
+
+  const issuesEl     = document.getElementById('issues');
+  const filesWIssues = results.filter(
+    r => r.issues && r.issues !== 'No issues found.' && r.issues !== '' && !r.skipped
+  );
+  if (!filesWIssues.length) {
+    issuesEl.innerHTML = '<span class="success-text">✓ No issues found across all files.</span>';
+  } else {
+    issuesEl.innerHTML = filesWIssues.map(f => `
+      <div class="file-issue-card">
+        <div class="file-issue-header">📄 ${escapeHtml(f.path)}</div>
+        <div class="file-issue-text">${escapeHtml(f.issues)}</div>
+      </div>`).join('');
   }
 
-  function showLoading() {
-    ['explanation', 'issues', 'fixedCode'].forEach(id => {
-      document.getElementById(id).innerHTML =
-        [90,75,60].map(w => `<div class="loading-line" style="width:${w}%"></div>`).join('');
-    });
-  }
+  const fixedEl = document.getElementById('fixedCode');
+  fixedEl.className   = 'fixed-content';
+  fixedEl.textContent = 'See per-file breakdown below for individual scores and issues.';
 
-  function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-  }
+  document.getElementById('repoBreakdownSection').style.display = 'block';
+  document.getElementById('repoBreakdown').innerHTML = results.map(f => {
+    const s = parseFloat(f.overall_score);
+    let cls = 'na', display = 'N/A';
+    if (f.skipped) {
+      display = 'Skipped';
+    } else if (!isNaN(s) && s > 0) {
+      cls     = s >= 7 ? '' : s >= 5 ? 'warn' : 'danger';
+      display = s.toFixed(1) + '/10';
+    }
+    return `<div class="file-score-item">
+      <span class="file-score-name">📄 ${escapeHtml(f.path)}</span>
+      <span class="file-score-badge ${cls}">${display}</span>
+    </div>`;
+  }).join('');
+}
 
-  function parseGithubUrl(url) {
-    const repoMatch = url.match(/github\.com\/([^\/]+)\/([^\/\?#]+)/);
-    if (!repoMatch) return null;
-    const owner = repoMatch[1], repo = repoMatch[2].replace(/\.git$/, '');
-    const fileMatch = url.match(/\/blob\/([^\/]+)\/(.+)/);
-    if (fileMatch) return { owner, repo, type: 'file', branch: fileMatch[1], path: fileMatch[2] };
-    return { owner, repo, type: 'repo' };
-  }
+// ── MAIN RUN ───────────────────────────────────────────────────────────────
+async function runAnalysis() {
+  const btn     = document.getElementById('runBtn');
+  const btnText = document.getElementById('btnText');
+  btn.classList.add('loading');
+  btnText.textContent = 'ANALYZING...';
+  showLoading();
+  document.getElementById('repoBreakdownSection').style.display = 'none';
 
-  async function fetchRawFile(owner, repo, path, branch, token) {
-    const headers = token ? { Authorization: `token ${token}` } : {};
-    const res = await fetch(`https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${path}`, { headers });
-    if (!res.ok) throw new Error(`Cannot fetch: ${path}`);
-    return res.text();
-  }
+  const extMap = {
+    py:'Python', js:'JavaScript', ts:'TypeScript', java:'Java',
+    go:'Go', rs:'Rust', cpp:'C++', sql:'SQL', rb:'Ruby',
+    php:'PHP', cs:'C#', kt:'Kotlin', swift:'Swift'
+  };
 
-  async function fetchRepoFiles(owner, repo, token) {
-    const headers = { Accept: 'application/vnd.github.v3+json' };
-    if (token) headers.Authorization = `token ${token}`;
-    const repoRes = await fetch(`https://api.github.com/repos/${owner}/${repo}`, { headers });
-    if (!repoRes.ok) throw new Error('Repo not found or private. Add a GitHub token.');
-    const { default_branch } = await repoRes.json();
-    const treeRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/trees/${default_branch}?recursive=1`, { headers });
-    const { tree } = await treeRes.json();
-    const exts = /\.(py|js|ts|jsx|tsx|java|cpp|c|go|rs|rb|php|cs|swift|kt|sql)$/i;
-    return tree
-      .filter(f => f.type === 'blob' && exts.test(f.path) && f.size < 50000)
-      .slice(0, 10)
-      .map(f => ({ path: f.path, branch: default_branch }));
-  }
+  try {
+    if (currentMode === 'paste') {
+      // ── SINGLE FILE MODE — rate limited ───────────────────────────────
+      const code = document.getElementById('codeInput').value.trim();
+      const lang = document.getElementById('langSelect').value;
+      if (!code) throw new Error('Please paste some code first.');
+      const data = await callBackend(code, lang, false); // rate limited
+      renderResult(data, lang);
 
-  async function callBackend(code, language) {
-    const res = await fetch('/review-code', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code, language })
-    });
-    if (!res.ok) throw new Error('Backend API request failed');
-    return res.json();
-  }
-
-  function renderResult(data) {
-    const score = parseFloat(data.quality_score) || 0;
-    setScore(score);
-
-    document.getElementById('explanation').textContent = data.ai_explanation || 'No explanation provided.';
-
-    const issuesEl = document.getElementById('issues');
-    const issuesText = data.issues || '';
-    if (!issuesText || issuesText === 'No issues found.') {
-      issuesEl.innerHTML = '<span style="color:var(--green2)">✓ No issues found.</span>';
     } else {
-      issuesEl.innerHTML = `<div class="issue-item"><span>⚠</span><span>${escapeHtml(issuesText)}</span></div>`;
-    }
+      const url   = document.getElementById('ghUrl').value.trim();
+      const token = document.getElementById('ghToken').value.trim();
+      if (!url) throw new Error('Please enter a GitHub URL.');
+      const parsed = parseGithubUrl(url);
+      if (!parsed) throw new Error('Invalid GitHub URL.');
 
-    const fixedEl = document.getElementById('fixedCode');
-    fixedEl.className = 'fixed-content';
-    fixedEl.textContent = data.fixed_code || '✓ No fix needed.';
-  }
+      if (parsed.type === 'file') {
+        // ── SINGLE GITHUB FILE — rate limited ─────────────────────────
+        btnText.textContent = 'FETCHING FILE...';
+        const content = await fetchRawFile(
+          parsed.owner, parsed.repo, parsed.path, parsed.branch || 'main', token
+        );
+        const lang = extMap[parsed.path.split('.').pop().toLowerCase()] || 'Python';
+        btnText.textContent = 'ANALYZING...';
+        const data = await callBackend(content, lang, false); // rate limited
+        renderResult(data, lang);
 
-  function renderRepoResult(results) {
-    // Calculate average from scored files only
-    const scored = results.filter(r => {
-      const s = parseFloat(r.quality_score);
-      return !isNaN(s) && s > 0;
-    });
-    const avgScore = scored.length
-      ? (scored.reduce((a, r) => a + parseFloat(r.quality_score), 0) / scored.length).toFixed(1)
-      : 'N/A';
-
-    // Set score ring
-    const numScore = parseFloat(avgScore) || 0;
-    setScore(numScore);
-
-    // Explanation as a clean paragraph
-    const skipped = results.filter(r => r.skipped).length;
-    const failed = results.filter(r => !r.skipped && (r.quality_score === 'N/A' || r.quality_score === 'Error')).length;
-    let explanationText = `Analyzed ${results.length} files from the repository. `;
-    explanationText += `${scored.length} file(s) were successfully scored with an average of ${avgScore}/10. `;
-    if (skipped > 0) explanationText += `${skipped} empty file(s) (like __init__.py) were skipped. `;
-    if (failed > 0) explanationText += `${failed} file(s) could not be parsed — this can happen due to API rate limits; try running again. `;
-    if (scored.length > 0) {
-      const best = scored.reduce((a, b) => parseFloat(a.quality_score) >= parseFloat(b.quality_score) ? a : b);
-      const worst = scored.reduce((a, b) => parseFloat(a.quality_score) <= parseFloat(b.quality_score) ? a : b);
-      explanationText += `Best file: ${best.path} (${best.quality_score}/10). `;
-      if (best.path !== worst.path) {
-        explanationText += `Needs most work: ${worst.path} (${worst.quality_score}/10).`;
-      }
-    }
-    document.getElementById('explanation').textContent = explanationText;
-
-    // Issues: render per-file cards
-    const issuesEl = document.getElementById('issues');
-    const filesWithIssues = results.filter(r => r.issues && r.issues !== 'No issues found.' && r.issues !== '' && !r.skipped);
-
-    if (filesWithIssues.length === 0) {
-      issuesEl.innerHTML = '<span style="color:var(--green2)">✓ No issues found across all files.</span>';
-    } else {
-      issuesEl.innerHTML = filesWithIssues.map(f => `
-        <div class="file-issue-card">
-          <div class="file-issue-header">📄 ${escapeHtml(f.path)}</div>
-          <div class="file-issue-text">${escapeHtml(f.issues)}</div>
-        </div>
-      `).join('');
-    }
-
-    // Fixed code
-    const fixedEl = document.getElementById('fixedCode');
-    fixedEl.className = 'fixed-content';
-    fixedEl.textContent = 'See per-file breakdown above for individual scores and issues.';
-
-    // Per-file breakdown
-    document.getElementById('repoBreakdownSection').style.display = 'block';
-    document.getElementById('repoBreakdown').innerHTML = results.map(f => {
-      const s = parseFloat(f.quality_score);
-      let cls = 'na';
-      let display = f.quality_score;
-      if (!isNaN(s) && s > 0) {
-        cls = s >= 7 ? '' : s >= 5 ? 'warn' : 'danger';
-        display = s + '/10';
-      } else if (f.skipped) {
-        display = 'Skipped';
       } else {
-        display = 'N/A';
+        // ── FULL REPO MODE — batch bypass ──────────────────────────────
+        btnText.textContent = 'FETCHING REPO...';
+        const fileRefs = await fetchRepoFiles(parsed.owner, parsed.repo, token);
+        if (!fileRefs.length) throw new Error('No code files found.');
+
+        document.getElementById('fileListWrap').style.display = 'block';
+        document.getElementById('fileCount').textContent = `(${fileRefs.length} files)`;
+        document.getElementById('fileList').innerHTML = fileRefs.map(f =>
+          `<div class="file-item">
+            <span class="file-name">${f.path}</span>
+            <span class="file-lang">${f.path.split('.').pop().toUpperCase()}</span>
+          </div>`
+        ).join('');
+
+        const results = [];
+        const delay   = ms => new Promise(r => setTimeout(r, ms));
+
+        for (let i = 0; i < fileRefs.length; i++) {
+          const f = fileRefs[i];
+          btnText.textContent = `ANALYZING ${i + 1}/${fileRefs.length}...`;
+          try {
+            const content = await fetchRawFile(
+              parsed.owner, parsed.repo, f.path, f.branch, token
+            );
+            if (content.trim().length < 5) {
+              results.push({
+                path: f.path, skipped: true,
+                overall_score: 0, readability: 0, performance: 0,
+                maintainability: 0, security: 0, best_practices: 0,
+                issues: '', ai_explanation: 'Empty file.', fixed_code: ''
+              });
+            } else {
+              const lang = extMap[f.path.split('.').pop().toLowerCase()] || 'Python';
+              // isBatch=true → bypasses rate limiter for all repo files
+              const data = await callBackend(content.slice(0, 3000), lang, true);
+              results.push({
+                path:            f.path,
+                skipped:         false,
+                overall_score:   parseFloat(data.overall_score)   || 0,
+                readability:     parseFloat(data.readability)      || 0,
+                performance:     parseFloat(data.performance)      || 0,
+                maintainability: parseFloat(data.maintainability)  || 0,
+                security:        parseFloat(data.security)         || 0,
+                best_practices:  parseFloat(data.best_practices)   || 0,
+                issues:          data.issues         || '',
+                ai_explanation:  data.ai_explanation || '',
+                fixed_code:      data.fixed_code     || ''
+              });
+            }
+          } catch (err) {
+            results.push({
+              path: f.path, skipped: false,
+              overall_score: 0, readability: 0, performance: 0,
+              maintainability: 0, security: 0, best_practices: 0,
+              issues: 'Failed: ' + err.message,
+              ai_explanation: '', fixed_code: ''
+            });
+          }
+          if (i < fileRefs.length - 1) await delay(3000);
+        }
+        renderRepoResult(results);
       }
-      return `<div class="file-score-item">
-        <span class="file-score-name">📄 ${escapeHtml(f.path)}</span>
-        <span class="file-score-badge ${cls}">${display}</span>
+    }
+
+  } catch (err) {
+    document.getElementById('heroSection').style.display = 'none';
+    document.getElementById('explanation').textContent   = `⚠ ${err.message}`;
+    document.getElementById('issues').textContent        = 'Check your input and try again.';
+    document.getElementById('fixedCode').textContent     = '';
+    document.getElementById('fixedCode').className       = 'fixed-content empty';
+  }
+
+  btn.classList.remove('loading');
+  btnText.textContent = 'RUN ANALYSIS';
+}
+
+document.addEventListener('keydown', e => {
+  if (e.ctrlKey && e.key === 'Enter') runAnalysis();
+});
+
+// ── HISTORY DRAWER ─────────────────────────────────────────────────────────
+async function openHistory() {
+  document.getElementById('historyDrawer').classList.add('open');
+  document.getElementById('drawerOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  const body = document.getElementById('drawerBody');
+  body.innerHTML = '<div class="drawer-loading">Loading reviews...</div>';
+  try {
+    const res     = await fetch('/reviews');
+    const reviews = await res.json();
+    if (!reviews.length) {
+      body.innerHTML =
+        '<div class="drawer-empty">No reviews yet. Run your first analysis!</div>';
+      return;
+    }
+    body.innerHTML = reviews.map(r => {
+      const score = parseFloat(r.overall_score);
+      const cls   = !isNaN(score)
+        ? (score >= 7 ? 'good' : score >= 5 ? 'warn' : 'danger')
+        : 'na';
+      const date  = r.created_at
+        ? new Date(r.created_at).toLocaleDateString()
+        : '—';
+      const snip  = r.issues && r.issues.length > 80
+        ? r.issues.slice(0, 80) + '…'
+        : (r.issues || 'No issues');
+      return `<div class="history-card">
+        <div class="history-card-top">
+          <span class="history-lang">${r.language || 'Unknown'}</span>
+          <span class="history-score ${cls}">${score ? score.toFixed(1) : '—'}/10</span>
+          <span class="history-date">${date}</span>
+        </div>
+        <div class="history-issues">${escapeHtml(snip)}</div>
       </div>`;
     }).join('');
+  } catch (e) {
+    body.innerHTML = '<div class="drawer-empty">Failed to load history.</div>';
   }
+}
 
-  async function runAnalysis() {
-    const btn = document.getElementById('runBtn');
-    const btnText = document.getElementById('btnText');
-    btn.classList.add('loading');
-    btnText.textContent = 'ANALYZING...';
-    showLoading();
-    document.getElementById('repoBreakdownSection').style.display = 'none';
-
-    try {
-      if (currentMode === 'paste') {
-        const code = document.getElementById('codeInput').value.trim();
-        const lang = document.getElementById('langSelect').value;
-        if (!code) throw new Error('Please paste some code first.');
-        const data = await callBackend(code, lang);
-        renderResult(data);
-
-      } else {
-        const url = document.getElementById('ghUrl').value.trim();
-        const token = document.getElementById('ghToken').value.trim();
-        if (!url) throw new Error('Please enter a GitHub URL.');
-        const parsed = parseGithubUrl(url);
-        if (!parsed) throw new Error('Invalid GitHub URL.');
-
-        const extMap = { py:'Python', js:'JavaScript', ts:'TypeScript', java:'Java', go:'Go', rs:'Rust', cpp:'C++', sql:'SQL' };
-
-        if (parsed.type === 'file') {
-          btnText.textContent = 'FETCHING FILE...';
-          const content = await fetchRawFile(parsed.owner, parsed.repo, parsed.path, parsed.branch || 'main', token);
-          const lang = extMap[parsed.path.split('.').pop().toLowerCase()] || 'Python';
-          btnText.textContent = 'ANALYZING...';
-          const data = await callBackend(content, lang);
-          renderResult(data);
-
-        } else {
-          btnText.textContent = 'FETCHING REPO...';
-          const fileRefs = await fetchRepoFiles(parsed.owner, parsed.repo, token);
-          if (!fileRefs.length) throw new Error('No code files found.');
-
-          document.getElementById('fileListWrap').style.display = 'block';
-          document.getElementById('fileCount').textContent = `(${fileRefs.length} files)`;
-          document.getElementById('fileList').innerHTML = fileRefs.map(f =>
-            `<div class="file-item"><span class="file-name">${f.path}</span><span class="file-lang">${f.path.split('.').pop().toUpperCase()}</span></div>`
-          ).join('');
-
-          const results = [];
-          const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
-          for (let i = 0; i < fileRefs.length; i++) {
-            const f = fileRefs[i];
-            btnText.textContent = `ANALYZING ${i + 1}/${fileRefs.length}...`;
-            try {
-              const content = await fetchRawFile(parsed.owner, parsed.repo, f.path, f.branch, token);
-              if (content.trim().length < 5) {
-                results.push({ path: f.path, quality_score: 'N/A', ai_explanation: 'Empty or near-empty file.', issues: '', fixed_code: '', skipped: true });
-              } else {
-                const data = await callBackend(content.slice(0, 3000), extMap[f.path.split('.').pop().toLowerCase()] || 'Python');
-                results.push({ path: f.path, ...data, skipped: false });
-              }
-            } catch (err) {
-              results.push({ path: f.path, quality_score: 'Error', ai_explanation: 'Failed: ' + err.message, issues: '', fixed_code: '', skipped: false });
-            }
-            if (i < fileRefs.length - 1) await delay(3000);
-          }
-
-          renderRepoResult(results);
-        }
-      }
-    } catch (err) {
-      document.getElementById('explanation').textContent = `⚠ ${err.message}`;
-      document.getElementById('issues').textContent = 'Check your input and try again.';
-      document.getElementById('fixedCode').textContent = '';
-      document.getElementById('fixedCode').className = 'fixed-content empty';
-    }
-
-    btn.classList.remove('loading');
-    btnText.textContent = 'RUN ANALYSIS';
-  }
-
-  document.addEventListener('keydown', e => {
-    if (e.ctrlKey && e.key === 'Enter') runAnalysis();
-  });
+function closeHistory() {
+  document.getElementById('historyDrawer').classList.remove('open');
+  document.getElementById('drawerOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
 </script>
 </body>
 </html>
+```
