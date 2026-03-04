@@ -178,7 +178,7 @@
           </div>
         </div>
 
-        <!-- 5-DIMENSION METRICS -->
+        <!-- 5-DIMENSION METRICS (only shown for repo analysis) -->
         <div class="metrics-section" id="metricsSection" style="display:none">
           <div class="section-label">📊 DIMENSION_SCORES</div>
           <div class="metrics-grid">
@@ -344,6 +344,36 @@ function setScore(score) {
   document.getElementById('statsBar').style.display = 'flex';
 }
 
+// ── RESET UI TO "ANALYZING" STATE ──────────────────────────────────────────
+function resetScoreUI() {
+  const ring = document.getElementById('scoreRing');
+  ring.style.strokeDashoffset = CIRC;
+  ring.style.stroke = 'var(--border2, #252f3a)';
+  ring.style.filter = 'none';
+  document.getElementById('scoreNum').textContent = '...';
+  const gradeEl = document.getElementById('scoreGrade');
+  gradeEl.textContent = 'Analyzing...';
+  gradeEl.style.color = 'var(--text3, #4b5563)';
+  const bar = document.getElementById('scoreBar');
+  bar.style.width      = '0%';
+  bar.style.background = 'var(--border2, #252f3a)';
+  bar.style.boxShadow  = 'none';
+  document.getElementById('statScore').textContent = '...';
+  document.getElementById('statScore').style.color = '';
+  document.getElementById('statGrade').textContent = 'Analyzing';
+  document.getElementById('statGrade').style.color = '';
+  document.getElementById('statLang').textContent  = '...';
+  document.getElementById('statsBar').style.display = 'flex';
+  ['bRead', 'bPerf', 'bMaint', 'bSec', 'bBest'].forEach(id => {
+    document.getElementById(id).style.width = '0%';
+  });
+  ['mRead', 'mPerf', 'mMaint', 'mSec', 'mBest'].forEach(id => {
+    document.getElementById(id).textContent = '—';
+  });
+  document.getElementById('metricsSection').style.display = 'none';
+  document.getElementById('outputLangBadge').style.display = 'none';
+}
+
 // ── REAL DIMENSION METRICS ─────────────────────────────────────────────────
 function setMetrics(data) {
   function animBar(valId, barId, val) {
@@ -395,14 +425,13 @@ function switchMode(mode) {
 
 // ── LOADING SHIMMER ────────────────────────────────────────────────────────
 function showLoading() {
+  resetScoreUI();
   ['explanation', 'issues', 'fixedCode'].forEach(id => {
     document.getElementById(id).innerHTML =
       [90, 75, 60].map(w =>
         `<div class="loading-line" style="width:${w}%"></div>`
       ).join('');
   });
-  document.getElementById('metricsSection').style.display = 'none';
-  document.getElementById('statsBar').style.display       = 'none';
 }
 
 function escapeHtml(text) {
@@ -447,6 +476,21 @@ async function fetchRawFile(owner, repo, path, branch, token) {
   return res.text();
 }
 
+// ── SMART FILE PICKER ──────────────────────────────────────────────────────
+function filePickPriority(path) {
+  let score = 0;
+  if (/^(docs?|tests?|test|spec|specs|scripts?|\.github|ci|examples?|demo|demos|gallery|profiling|benchmarks?|build|dist|node_modules|vendor|third.party|fixtures?|assets|static|public|migrations?|coverage|stubs?)\//i.test(path)) score += 20;
+  if (/\/(conf|conftest|setup|fuzz|mix_small|generate_schema|diff_shades|check_pre_commit|check_version|init_kapa|termynal|custom)\.[^/]+$/i.test(path)) score += 10;
+  if (/\/__init__\.(py|js|ts)$/.test(path)) score += 15;
+  if (/^\/?src\//.test(path))  score -= 10;
+  if (/^\/?lib\//.test(path))  score -= 8;
+  if (/^\/?app\//.test(path))  score -= 8;
+  if (/^\/?core\//.test(path)) score -= 8;
+  if (/^\/?pkg\//.test(path))  score -= 6;
+  if (/^\/?api\//.test(path))  score -= 6;
+  return score;
+}
+
 async function fetchRepoFiles(owner, repo, token) {
   const headers = { Accept: 'application/vnd.github.v3+json' };
   if (token) headers.Authorization = `token ${token}`;
@@ -462,14 +506,31 @@ async function fetchRepoFiles(owner, repo, token) {
   );
   const { tree } = await treeRes.json();
   const exts = /\.(py|js|ts|jsx|tsx|java|cpp|c|go|rs|rb|php|cs|swift|kt|sql)$/i;
-  return tree
-    .filter(f => f.type === 'blob' && exts.test(f.path) && f.size < 50000)
+
+  // HARD EXCLUDE junk paths — node_modules, vendor, dist, etc.
+  const EXCLUDE = /(\/(node_modules|vendor|third[_-]?party|\.next|\.nuxt|bower_components|__pycache__|\.git|dist\/|build\/|coverage|\.tox|egg-info|\.mypy_cache|\.pytest_cache|venv|env\/|\.venv)\/)|(\.min\.(js|css)$)|(\.bundle\.(js|ts)$)|(\.chunk\.(js|ts)$)|(\.d\.ts$)|(package-lock\.json|yarn\.lock|pnpm-lock\.yaml)/i;
+
+  const candidates = tree.filter(
+    f => f.type === 'blob'
+      && exts.test(f.path)
+      && !EXCLUDE.test('/' + f.path)
+      && f.size > 80
+      && f.size < 50000
+  );
+
+  candidates.sort((a, b) => {
+    const pa = filePickPriority(a.path);
+    const pb = filePickPriority(b.path);
+    if (pa !== pb) return pa - pb;
+    return b.size - a.size;
+  });
+
+  return candidates
     .slice(0, 10)
     .map(f => ({ path: f.path, branch: default_branch }));
 }
 
 // ── CALL BACKEND ───────────────────────────────────────────────────────────
-// isBatch=true → sends X-Batch-Request header → bypasses rate limiter
 async function callBackend(code, language, isBatch = false) {
   const headers = { 'Content-Type': 'application/json' };
   if (isBatch) headers['X-Batch-Request'] = 'true';
@@ -482,12 +543,14 @@ async function callBackend(code, language, isBatch = false) {
   return res.json();
 }
 
-// ── RENDER SINGLE FILE ─────────────────────────────────────────────────────
+// ── RENDER SINGLE FILE (paste mode + single GitHub file) ────────────────────
 function renderResult(data, lang) {
   document.getElementById('heroSection').style.display = 'none';
   const score = parseFloat(data.overall_score ?? data.quality_score) || 0;
   setScore(parseFloat(score.toFixed(1)));
-  setMetrics(data);
+
+  // NO dimension scores for paste mode / single file — only for repo analysis
+  document.getElementById('metricsSection').style.display = 'none';
 
   if (lang) {
     const badge = document.getElementById('outputLangBadge');
@@ -516,7 +579,7 @@ function renderResult(data, lang) {
   fixedEl.textContent = data.fixed_code || '✓ No fix needed.';
 }
 
-// ── RENDER REPO RESULT ─────────────────────────────────────────────────────
+// ── RENDER REPO RESULT (multi-file — shows dimension scores) ────────────────
 function renderRepoResult(results) {
   document.getElementById('heroSection').style.display = 'none';
 
@@ -534,18 +597,18 @@ function renderRepoResult(results) {
   };
 
   setScore(avg.overall_score);
-  setMetrics(avg);
+  setMetrics(avg);  // SHOW dimension scores for repo analysis
   document.getElementById('statLang').textContent = 'Multi-File';
 
   const skipped = results.filter(r => r.skipped).length;
   const failed  = results.filter(r => !r.skipped && !(r.overall_score > 0)).length;
   let expl = `Analyzed ${results.length} file(s). ${scored.length} scored · avg ${avg.overall_score}/10. `;
   if (skipped > 0) expl += `${skipped} empty file(s) skipped. `;
-  if (failed  > 0) expl += `${failed} file(s) failed (API limit?). `;
+  if (failed  > 0) expl += `${failed} file(s) could not be parsed — this can happen due to API rate limits; try running again. `;
   if (scored.length > 0) {
     const best  = scored.reduce((a, b) => a.overall_score >= b.overall_score ? a : b);
     const worst = scored.reduce((a, b) => a.overall_score <= b.overall_score ? a : b);
-    expl += `Best: ${best.path} (${best.overall_score}/10). `;
+    expl += `Best file: ${best.path} (${best.overall_score}/10). `;
     if (best.path !== worst.path)
       expl += `Needs most work: ${worst.path} (${worst.overall_score}/10).`;
   }
@@ -567,7 +630,7 @@ function renderRepoResult(results) {
 
   const fixedEl = document.getElementById('fixedCode');
   fixedEl.className   = 'fixed-content';
-  fixedEl.textContent = 'See per-file breakdown below for individual scores and issues.';
+  fixedEl.textContent = 'See per-file breakdown above for individual scores and issues.';
 
   document.getElementById('repoBreakdownSection').style.display = 'block';
   document.getElementById('repoBreakdown').innerHTML = results.map(f => {
@@ -603,11 +666,10 @@ async function runAnalysis() {
 
   try {
     if (currentMode === 'paste') {
-      // ── SINGLE FILE MODE — rate limited ───────────────────────────────
       const code = document.getElementById('codeInput').value.trim();
       const lang = document.getElementById('langSelect').value;
       if (!code) throw new Error('Please paste some code first.');
-      const data = await callBackend(code, lang, false); // rate limited
+      const data = await callBackend(code, lang, false);
       renderResult(data, lang);
 
     } else {
@@ -618,18 +680,16 @@ async function runAnalysis() {
       if (!parsed) throw new Error('Invalid GitHub URL.');
 
       if (parsed.type === 'file') {
-        // ── SINGLE GITHUB FILE — rate limited ─────────────────────────
         btnText.textContent = 'FETCHING FILE...';
         const content = await fetchRawFile(
           parsed.owner, parsed.repo, parsed.path, parsed.branch || 'main', token
         );
         const lang = extMap[parsed.path.split('.').pop().toLowerCase()] || 'Python';
         btnText.textContent = 'ANALYZING...';
-        const data = await callBackend(content, lang, false); // rate limited
+        const data = await callBackend(content, lang, false);
         renderResult(data, lang);
 
       } else {
-        // ── FULL REPO MODE — batch bypass ──────────────────────────────
         btnText.textContent = 'FETCHING REPO...';
         const fileRefs = await fetchRepoFiles(parsed.owner, parsed.repo, token);
         if (!fileRefs.length) throw new Error('No code files found.');
@@ -662,8 +722,7 @@ async function runAnalysis() {
               });
             } else {
               const lang = extMap[f.path.split('.').pop().toLowerCase()] || 'Python';
-              // isBatch=true → bypasses rate limiter for all repo files
-              const data = await callBackend(content.slice(0, 3000), lang, true);
+              const data = await callBackend(content.slice(0, 4000), lang, true);
               results.push({
                 path:            f.path,
                 skipped:         false,
@@ -757,4 +816,3 @@ function closeHistory() {
 </script>
 </body>
 </html>
-```
